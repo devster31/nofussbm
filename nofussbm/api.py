@@ -45,7 +45,8 @@ setup_json( json )
 
 def myjsonify( data = None, code = 200, headers = None ):
 	data = [] if not data else data
-	response = make_response( json.dumps( data, indent = 4, sort_keys = True, ensure_ascii = False ) + '\n', code )
+	response = json.jsonify(data)
+	response.status_code = code
 	response.headers[ 'Content-Type' ] = 'application/json; charset=UTF-8'
 	if headers:
 		for k,v in headers.items(): response.headers[ k ] = v
