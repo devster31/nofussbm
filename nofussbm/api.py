@@ -21,7 +21,10 @@ from functools import wraps
 from hashlib import sha1
 import hmac
 import re
-from urlparse import parse_qs
+try:
+	from urlparse import parse_qs
+except ImportError:
+	from urllib.parse import parse_qs
 
 from flask import Blueprint, make_response, request, g, json, abort
 from pymongo.errors import OperationFailure, DuplicateKeyError
@@ -157,7 +160,6 @@ def put():
 			clean_bm( bm )
 			bm[ 'date-modified' ] = datetime.utcnow()
 			ret = mongo.db.bookmarks.update_one( { '_id': _id, 'email': g.email }, { '$set': bm } )
-			print ret
 		except ( KeyError, OperationFailure ):
 			result[ 'error' ].append( '#{0}'.format( pos ) )
 			code = 500
@@ -230,7 +232,7 @@ def delicious_import():
 				'date-modified': date,
 				'url': attrs[ 1 ],
 				'title': parts[ 2 ][ : -3 ],
-				'tags': map( lambda _: _.strip(), attrs[ 7 ].split( ',' ) )
+				'tags': [_.strip() for _ in attrs[ 7 ].split( ',' )]
 			}
 			bms.append( bm )
 	try:

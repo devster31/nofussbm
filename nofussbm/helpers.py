@@ -42,7 +42,7 @@ def query_from_dict( email, dct ):
 	if 'id' in dct:
 		query[ '_id' ] = ObjectId( dct[ 'id'] )
 	if 'tags' in dct:
-		tags = map( lambda _: _.strip(), dct[ 'tags' ].split( ',' ) )
+		tags = [ _.strip() for _ in dct[ 'tags' ].split( ',' ) ]
 		query[ 'tags' ] = { '$all': tags }
 	if 'title' in dct:
 		query[ 'title' ] = { '$regex': dct[ 'title' ], '$options': 'i' }
@@ -55,7 +55,7 @@ def setup_json( json ):
 		for key, value in dct.items():
 			if key not in ALLOWED_KEYS: continue
 			if key == 'id': res[ 'id' ] = to_id( value )
-			elif key == 'tags': res[ 'tags' ] = map( lambda _: _.strip(), value.split( ',' ) )
+			elif key == 'tags': res[ 'tags' ] = [ _.strip() for _ in value.split( ',' ) ]
 			elif key.startswith( 'date-' ):
 				try:
 					res[ key ] = datetime.strptime( value, DATETIME_FORMAT )
