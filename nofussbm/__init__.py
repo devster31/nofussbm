@@ -35,7 +35,8 @@ class Config( object ):
 app = Flask( __name__ )
 
 app.config[ 'MONGO_URI' ] = Config.MONGO_URI
-app.config[ 'MONGO_CONNECT' ] = 'False' # http://api.mongodb.org/python/current/faq.html#using-pymongo-with-multiprocessing
+# http://api.mongodb.org/python/current/faq.html#using-pymongo-with-multiprocessing
+app.config[ 'MONGO_CONNECT' ] = 'False'
 mongo = PyMongo( app )
 
 from .api import api
