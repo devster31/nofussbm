@@ -7,6 +7,7 @@ import json
 import hmac
 from hashlib import sha1
 from base64 import b64encode
+from bson.objectid import ObjectId
 
 class NofussbmTestCase(unittest.TestCase):
 
@@ -22,6 +23,25 @@ class NofussbmTestCase(unittest.TestCase):
             nofussbm.mongo.cx.drop_database(nofussbm.app.config['MONGO_DBNAME'])
 
 
+    def isJson(self, myjson):
+        try:
+            json.loads(myjson)
+        except ValueError:
+            return False
+        return True
+
+
+    def seedMongo(self):
+        with open('tests/seed.json', 'r') as f:
+            seed = json.load(f)
+        self.seed_ids = []
+        for pos, bm in enumerate(seed):
+            bm['email'] = self.email
+            bm['date-added'] = bm['date-modified'] = datetime.datetime.utcnow()
+            rv = nofussbm.mongo.db.bookmarks.insert_one(bm)
+            self.seed_ids.append(rv.inserted_id)
+
+
     def testMongo(self):
         self.assertIsInstance(nofussbm.mongo, flask_pymongo.PyMongo)
         with nofussbm.app.app_context():
@@ -33,14 +53,6 @@ class NofussbmTestCase(unittest.TestCase):
         rv = self.client.post('/api/v1/sendkey', data=dict(email=self.email))
         self.assertEqual(rv.get_data(), '')
         self.assertEqual(rv.status_code, 200)
-
-
-    def isJson(self, myjson):
-        try:
-            json.loads(myjson)
-        except ValueError:
-            return False
-        return True
 
 
     def testPost(self):
@@ -57,17 +69,6 @@ class NofussbmTestCase(unittest.TestCase):
         self.assertIn('added', json.loads(rvdata))
 
 
-    def seedMongo(self):
-        with open('tests/seed.json', 'r') as f:
-            seed = json.load(f)
-        self.seed_ids = []
-        for pos, bm in enumerate(seed):
-            bm['email'] = self.email
-            bm['date-added'] = bm['date-modified'] = datetime.datetime.utcnow()
-            rv = nofussbm.mongo.db.bookmarks.insert_one(bm)
-            self.seed_ids.append(rv.inserted_id)
-
-
     def testGet(self):
         with nofussbm.app.app_context():
             self.seedMongo()
@@ -77,6 +78,20 @@ class NofussbmTestCase(unittest.TestCase):
         self.assertTrue(self.isJson(rvdata))
         self.assertRegexpMatches(rv.headers.get('Content-Range'), r'bookmarks \d+-\d+/\d+')
         self.assertRegexpMatches(rv.headers.get('Accept-Ranges'), r'bookmarks')
+    def testQueryFromDict(self):
+        with nofussbm.app.app_context():
+            self.seedMongo()
+        dct = {
+            'id': ObjectId(self.seed_ids[0]),
+            'title': u'Github',
+            'tags': u'github,git'
+        }
+        check = {'_id': ObjectId(self.seed_ids[0]),
+                 'title': {'$options': 'i', '$regex': u'Github'},
+                 'email': self.email,
+                 'tags': {'$all': [u'github', u'git']}}
+        query = nofussbm.query_from_dict(self.email, dct)
+        self.assertEqual(query, check)
 
 
     def testPut(self):
