@@ -1,2 +1,1 @@
-web: ./wrapper.sh
-
+web: python run.py
